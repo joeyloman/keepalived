@@ -508,6 +508,21 @@ vrrp_vscript_fall_handler(vector_t *strvec)
 		vscript->fall = 1;
 }
 
+static void
+vrrp_vip_failover_delay_handler(vector_t *strvec)
+{
+	vrrp_t *vrrp = LIST_TAIL_DATA(vrrp_data->vrrp);
+	vrrp->vip_failover_delay = atoi(vector_slot(strvec, 1));
+	if (VRRP_IS_BAD_VIP_FAILOVER_DELAY(vrrp->vip_failover_delay)) {
+		log_message(LOG_INFO, "VRRP Error : VIP failover delay not valid !");
+		log_message(LOG_INFO,
+			"             must be between 0 & 60. reconfigure !");
+		log_message(LOG_INFO,
+			"             Using default value : %d\n", VRRP_VIP_DELAY_DFL);
+		vrrp->vip_failover_delay = VRRP_VIP_DELAY_DFL;
+	}
+}
+
 vector_t *
 vrrp_init_keywords(void)
 {
@@ -560,6 +575,7 @@ vrrp_init_keywords(void)
 	install_keyword("garp_master_refresh", &vrrp_garp_refresh_handler);
 	install_keyword("garp_master_repeat", &vrrp_garp_rep_handler);
 	install_keyword("garp_master_refresh_repeat", &vrrp_garp_refresh_rep_handler);
+	install_keyword("vip_failover_delay", &vrrp_vip_failover_delay_handler);
 	install_keyword("authentication", NULL);
 	install_sublevel();
 	install_keyword("auth_type", &vrrp_auth_type_handler);

@@ -760,6 +760,13 @@ vrrp_send_link_update(vrrp_t * vrrp, int rep)
 void
 vrrp_state_become_master(vrrp_t * vrrp)
 {
+	/* if the vip_failover_delay is specified the previous master needs some time to run the notify stop script */
+	if (vrrp->vip_failover_delay > 0) {
+		log_message(LOG_INFO, "VRRP_Instance(%s) Waiting %d seconds before binding the VIP"
+			, vrrp->iname, vrrp->vip_failover_delay);
+		sleep(vrrp->vip_failover_delay);
+	}
+
 	/* add the ip addresses */
 	if (!LIST_ISEMPTY(vrrp->vip))
 		vrrp_handle_ipaddress(vrrp, IPADDRESS_ADD, VRRP_VIP_TYPE);
@@ -864,6 +871,18 @@ vrrp_state_leave_master(vrrp_t * vrrp)
 	switch (vrrp->wantstate) {
 	case VRRP_STATE_BACK:
 		log_message(LOG_INFO, "VRRP_Instance(%s) Entering BACKUP STATE", vrrp->iname);
+
+		/* if the vip failover delay is specified the notify backup script needs some time before the VIP failover happens */
+		if (vrrp->vip_failover_delay > 0) {
+			/* Run backup script */
+			if (vrrp->script_backup)
+				notify_exec(vrrp->script_backup);
+
+			log_message(LOG_INFO, "VRRP_Instance(%s) Waiting %d seconds before removing the VIP"
+				, vrrp->iname, vrrp->vip_failover_delay);
+			sleep(vrrp->vip_failover_delay);
+		}
+
 		vrrp_restore_interface(vrrp, 0);
 		vrrp->state = vrrp->wantstate;
 		notify_instance_exec(vrrp, VRRP_STATE_BACK);
@@ -1192,6 +1211,19 @@ shutdown_vrrp_instances(void)
 	for (e = LIST_HEAD(l); e; ELEMENT_NEXT(e)) {
 		vrrp = ELEMENT_DATA(e);
 
+		/* if the vip_failover_delay is specified we need some time to run the notify stop script before the failover happens */
+		if (vrrp->vip_failover_delay > 0) {
+			if (vrrp->state == VRRP_STATE_MAST) {
+				/* Run stop script */
+				if (vrrp->script_stop)
+					notify_exec(vrrp->script_stop);
+
+				log_message(LOG_INFO, "VRRP_Instance(%s) Waiting %d seconds before removing the VIP"
+					, vrrp->iname, vrrp->vip_failover_delay);
+				sleep(vrrp->vip_failover_delay);
+			}
+		}
+
 		/* Remove VIPs/VROUTEs */
 		if (vrrp->state == VRRP_STATE_MAST)
 			vrrp_restore_interface(vrrp, 1);
@@ -1200,9 +1232,12 @@ shutdown_vrrp_instances(void)
 		if (vrrp->vmac_flags & VRRP_VMAC_FL_SET)
 			netlink_link_del_vmac(vrrp);
 
-		/* Run stop script */
-		if (vrrp->script_stop)
-			notify_exec(vrrp->script_stop);
+		/* if the vip_failover_delay is not specified/default return to the old behavior */
+		if (vrrp->vip_failover_delay == 0) {
+			/* Run stop script */
+			if (vrrp->script_stop)
+				notify_exec(vrrp->script_stop);
+		}
 
 #ifdef _HAVE_IPVS_SYNCD_
 		/*

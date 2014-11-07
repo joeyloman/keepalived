@@ -66,6 +66,7 @@ typedef struct _vrrphdr {			/* rfc2338.5.1 */
 #define VRRP_GARP_DELAY 	(5 * TIMER_HZ)	/* Default delay to launch gratuitous arp */
 #define VRRP_GARP_REP		5		/* Default repeat value for MASTER state gratuitous arp */
 #define VRRP_GARP_REFRESH_REP	1		/* Default repeat value for refresh gratuitous arp */
+#define VRRP_VIP_DELAY_DFL	0		/* Default (no) VIP failover delay (0 secs) */
 
 /*
  * parameters per vrrp sync group. A vrrp_sync_group is a set
@@ -121,6 +122,7 @@ typedef struct _vrrp_t {
 							 * Those VIPs will not be presents into the
 							 * VRRP adverts
 							 */
+	int			vip_failover_delay;     /* Time to wait before the vip will transfer to the new master */
 	list			vroutes;		/* list of virtual routes */
 	int			adver_int;		/* delay between advertisements(in sec) */
 	int			nopreempt;		/* true if higher prio does not preempt lower */
@@ -210,6 +212,7 @@ typedef struct _vrrp_t {
 #define VRRP_IS_BAD_PREEMPT_DELAY(d)	((d)<0 || (d)>TIMER_MAX_SEC)
 #define VRRP_SEND_BUFFER(V)		((V)->send_buffer)
 #define VRRP_SEND_BUFFER_SIZE(V)	((V)->send_buffer_size)
+#define VRRP_IS_BAD_VIP_FAILOVER_DELAY(p) ((p)<0 || (p)>60)
 
 #define VRRP_TIMER_SKEW(svr)	((256-(svr)->base_priority)*TIMER_HZ/256)
 #define VRRP_VIP_ISSET(V)	((V)->vipset)

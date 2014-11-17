@@ -31,6 +31,8 @@ stop() {
 	RETVAL=0
         echo
         [ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/keepalived
+        VIP_FAILOVER_DELAY=$(awk '/vip_failover_delay/ { print $2 }' /etc/keepalived/keepalived.conf)
+        [ ! -z "${VIP_FAILOVER_DELAY}" ] && sleep ${VIP_FAILOVER_DELAY}
         return $RETVAL
 }
 

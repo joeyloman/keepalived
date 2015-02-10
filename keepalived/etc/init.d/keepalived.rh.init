@@ -31,6 +31,8 @@ stop() {
 	RETVAL=0
         echo
         [ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/keepalived
+        FAILOVER_DELAY=$(awk '/failover_delay/ { print $2 }' /etc/keepalived/keepalived.conf)
+        [ ! -z "${FAILOVER_DELAY}" ] && sleep ${FAILOVER_DELAY}
         return $RETVAL
 }
 

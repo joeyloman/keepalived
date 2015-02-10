@@ -176,6 +176,12 @@ static void vrrp_log_int_up(vrrp_t *vrrp)
 		log_message(LOG_INFO, "Kernel is reporting: tracked interface are UP");
 }
 
+/* enable the fail_over_delay semaphore */
+static void set_failover_delay_sem()
+{
+    failover_delay_sem = 1;
+}
+
 /*
  * Initialize state handling
  * --rfc2338.6.4.1
@@ -186,6 +192,9 @@ vrrp_init_state(list l)
 	vrrp_t *vrrp;
 	vrrp_sgroup_t *vgroup;
 	element e;
+
+        /* disable the fail_over_delay semaphore */
+        failover_delay_sem = 0;
 
 	for (e = LIST_HEAD(l); e; ELEMENT_NEXT(e)) {
 		vrrp = ELEMENT_DATA(e);
@@ -251,6 +260,9 @@ vrrp_init_state(list l)
 #endif
 			log_message(LOG_INFO, "VRRP_Instance(%s) Entering BACKUP STATE",
 			       vrrp->iname);
+
+                        /* set the fail_over_delay semaphore after the failover delay */
+                        thread_add_timer(master, set_failover_delay_sem, NULL, vrrp->failover_delay * TIMER_HZ);
 
 			/* Set BACKUP state */
 			vrrp_restore_interface(vrrp, 0);

@@ -249,6 +249,15 @@ which will transition together on any state change.
     # Debug level, not implemented yet.
     debug
 
+    # Seconds to wait before the failover takes place.
+    # This is handy when keepalived manages an application which has
+    # persistent connections to the VIP and needs a proper shutdown.
+    # For example: gracefully stop the application with the notify_stop
+    # or notify_backup script and give it <x> secs to complete this task.
+    # Then transfer the VIP to the other server and start the application
+    # with the notify_master script (if it's not already running).
+    failover_delay 10    # wait 10 seconds before the failover takes place
+
     # notify scripts, alert as above
     notify_master <STRING>|<QUOTED-STRING>
     notify_backup <STRING>|<QUOTED-STRING>

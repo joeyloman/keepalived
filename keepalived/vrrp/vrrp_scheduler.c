@@ -262,7 +262,8 @@ vrrp_init_state(list l)
 			       vrrp->iname);
 
                         /* set the fail_over_delay semaphore after the failover delay */
-                        thread_add_timer(master, set_failover_delay_sem, NULL, vrrp->failover_delay * TIMER_HZ);
+                        if (vrrp->failover_delay > 0)
+                                thread_add_timer(master, set_failover_delay_sem, NULL, vrrp->failover_delay * TIMER_HZ);
 
 			/* Set BACKUP state */
 			vrrp_restore_interface(vrrp, 0);
